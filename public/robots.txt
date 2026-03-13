@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://accesscheck.vercel.app/sitemap.xml
+Sitemap: https://accesscheck.openwavesdesign.com/sitemap.xml
