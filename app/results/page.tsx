@@ -211,7 +211,7 @@ function ResultsContent() {
             Open Waves Design specializes in accessible, high-converting websites for small businesses. We'll handle the technical side so you can focus on running your business.
           </p>
           <a
-            href="https://openwavesdesign.com"
+            href="https://openwavesdesign.com/contact"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block px-8 py-3 bg-white text-brand font-semibold text-sm rounded-xl hover:bg-blue-50 transition-colors font-sans"
@@ -227,7 +227,7 @@ function ResultsContent() {
           <span>
             Built by{' '}
             <a
-              href="https://openwavesdesign.com/contact"
+              href="https://openwavesdesign.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-brand hover:text-brand-light transition-colors font-medium"
