@@ -16,7 +16,7 @@ export default function HomePage() {
             <span className="font-display text-lg text-slate-800">AccessCheck</span>
           </div>
           <a
-            href="https://openwave.design"
+            href="https://openwavesdesign.com"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-slate-500 hover:text-brand transition-colors font-sans"
@@ -134,7 +134,7 @@ export default function HomePage() {
           <span>
             Built by{' '}
             <a
-              href="https://openwave.design"
+              href="https://openwavesdesign.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-brand hover:text-brand-light transition-colors font-medium"
