@@ -1,31 +1,9 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { Resend } from 'resend';
+import crypto from 'crypto';
+import otpStore from '@/lib/otpStore';
 
 export const runtime = 'nodejs';
-
-interface Signup {
-  email: string;
-  url: string;
-  grade: string;
-  timestamp: string;
-}
-
-const DATA_FILE = path.join(process.cwd(), 'data', 'signups.json');
-
-async function readSignups(): Promise<Signup[]> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, 'utf-8');
-    return JSON.parse(raw) as Signup[];
-  } catch {
-    return [];
-  }
-}
-
-async function writeSignups(signups: Signup[]): Promise<void> {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(signups, null, 2), 'utf-8');
-}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -40,27 +18,42 @@ export async function POST(req: Request) {
   }
 
   const { email, url, grade } = body;
+  const normalizedEmail = email?.trim().toLowerCase() ?? '';
 
-  if (!email || !isValidEmail(email)) {
+  if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
     return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
   }
 
-  const signup: Signup = {
-    email: email.trim().toLowerCase(),
+  const code = crypto.randomInt(100000, 999999).toString();
+  otpStore.set(normalizedEmail, {
+    code,
+    expiresAt: Date.now() + 10 * 60 * 1000,
     url: url ?? '',
     grade: grade ?? '',
-    timestamp: new Date().toISOString(),
-  };
+    attempts: 0,
+  });
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
-    const existing = await readSignups();
-    existing.push(signup);
-    await writeSignups(existing);
-    return NextResponse.json({ success: true });
+    await resend.emails.send({
+      from: process.env.RESEND_FROM ?? 'AccessCheck <onboarding@resend.dev>',
+      to: normalizedEmail,
+      subject: 'Your AccessCheck verification code',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="color:#0f4c8a;margin-bottom:8px">Your verification code</h2>
+          <p style="color:#475569;margin-bottom:24px">Enter this code to unlock your full accessibility report:</p>
+          <div style="background:#f1f5f9;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+            <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#0f172a">${code}</span>
+          </div>
+          <p style="color:#94a3b8;font-size:14px">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
+        </div>
+      `,
+    });
   } catch (e) {
-    console.error('Failed to save signup:', e);
-    // Still return success — don't block the user from seeing results
-    // due to a file system issue (e.g. Vercel read-only FS)
-    return NextResponse.json({ success: true, warning: 'Email logged but could not be persisted.' });
+    console.error('Failed to send OTP email:', e);
+    return NextResponse.json({ error: 'Failed to send verification email. Please try again.' }, { status: 500 });
   }
+
+  return NextResponse.json({ success: true, step: 'verify' });
 }
