@@ -31,6 +31,13 @@ export const metadata: Metadata = {
     description: 'Is your website ADA compliant? Find out in 30 seconds — free.',
     images: ['/og-image.png'],
   },
+  icons: {
+    icon: [
+      { url: '/ac-icon.svg', type: 'image/svg+xml' },
+      { url: '/accesscheck-icon.png', sizes: '240x240', type: 'image/png' },
+    ],
+    apple: { url: '/accesscheck-icon.png', sizes: '240x240' },
+  },
   robots: {
     index: true,
     follow: true,
