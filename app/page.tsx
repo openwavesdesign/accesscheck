@@ -1,4 +1,5 @@
 import AuditForm from '@/components/AuditForm';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -8,11 +9,7 @@ export default function HomePage() {
       <header className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-brand rounded-md flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+            <Image src="/ac-icon.svg" alt="AccessCheck" width={28} height={28} priority />
             <span className="font-display text-lg text-slate-800">AccessCheck</span>
           </div>
           <a
