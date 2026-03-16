@@ -235,7 +235,7 @@ export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptur
         )}
 
         <p className="mt-3 text-slate-400 text-xs font-sans text-center leading-relaxed">
-          We'll only email you about your results and accessibility tips. No spam, ever.
+          We'll only email you about your results and accessibility tips. No spam, ever. Unsubscribe at any time.
         </p>
       </form>
     </div>
