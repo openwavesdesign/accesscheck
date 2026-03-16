@@ -1,8 +1,10 @@
 import AuditForm from '@/components/AuditForm';
 import Image from 'next/image';
 import Link from 'next/link';
+import { auth } from '@clerk/nextjs/server';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { userId } = auth();
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
@@ -12,14 +14,31 @@ export default function HomePage() {
             <Image src="/ac-icon.svg" alt="AccessCheck" width={28} height={28} priority />
             <span className="font-display text-lg text-slate-800">AccessCheck</span>
           </div>
-          <a
-            href="https://openwavesdesign.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-slate-500 hover:text-brand transition-colors font-sans"
-          >
-            Open Waves Design
-          </a>
+          <div className="flex items-center gap-4">
+            {userId ? (
+              <Link
+                href="/dashboard"
+                className="text-sm font-semibold text-brand hover:text-brand-dark transition-colors font-sans"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="text-sm text-slate-500 hover:text-slate-800 transition-colors font-sans"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="text-sm font-semibold bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors font-sans"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -50,21 +51,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-8FXKFBN94F" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-8FXKFBN94F');
-            `,
-          }}
-        />
-      </head>
-      <body>{children}</body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <script async src="https://www.googletagmanager.com/gtag/js?id=G-8FXKFBN94F" />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-8FXKFBN94F');
+              `,
+            }}
+          />
+        </head>
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }
