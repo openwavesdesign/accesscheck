@@ -38,7 +38,11 @@ async function subscribeToKit(email: string): Promise<void> {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ email_address: email, state: 'active' }),
+    body: JSON.stringify({
+      email_address: email,
+      state: 'active',
+      ...(process.env.KIT_TAG_ID ? { tags: [{ id: Number(process.env.KIT_TAG_ID) }] } : {}),
+    }),
   });
 
   const formId = process.env.KIT_FORM_ID;
