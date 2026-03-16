@@ -44,7 +44,7 @@ export default function HomePage() {
 
             <p className="text-slate-600 text-lg sm:text-xl font-sans leading-relaxed mb-10 max-w-2xl mx-auto">
               Small businesses are being targeted by ADA compliance lawsuits at record rates.
-              Get a free instant accessibility scorecard for your website — no login required.
+              Get a free instant accessibility scorecard for your website — free scan, full report delivered to your inbox.
             </p>
 
             <AuditForm />
@@ -109,7 +109,7 @@ export default function HomePage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
               {[
-                { step: '1', title: 'Enter your URL', desc: 'Paste your website address in the form above. No login or signup needed.' },
+                { step: '1', title: 'Enter your URL', desc: 'Paste your website address in the form above. No password or account needed.' },
                 { step: '2', title: 'We analyze your site', desc: 'Our tool checks your site against 6 key WCAG accessibility criteria in seconds.' },
                 { step: '3', title: 'Get your scorecard', desc: 'Receive a letter grade and plain-English explanation of any issues found.' },
               ].map(({ step, title, desc }) => (
