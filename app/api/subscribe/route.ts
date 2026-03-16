@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import crypto from 'crypto';
-import otpStore from '@/lib/otpStore';
 
 export const runtime = 'nodejs';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function signToken(payload: object): string {
+  const secret = process.env.OTP_SECRET ?? 'dev-secret-change-me';
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  return `${data}.${sig}`;
 }
 
 export async function POST(req: Request) {
@@ -25,13 +31,9 @@ export async function POST(req: Request) {
   }
 
   const code = crypto.randomInt(100000, 999999).toString();
-  otpStore.set(normalizedEmail, {
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-    url: url ?? '',
-    grade: grade ?? '',
-    attempts: 0,
-  });
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+
+  const token = signToken({ email: normalizedEmail, code, expiresAt });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
@@ -55,5 +57,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to send verification email. Please try again.' }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, step: 'verify' });
+  return NextResponse.json({ success: true, step: 'verify', token });
 }
