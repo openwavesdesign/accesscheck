@@ -1,7 +1,32 @@
 import { NextResponse } from 'next/server';
-import otpStore from '@/lib/otpStore';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
+
+interface TokenPayload {
+  email: string;
+  code: string;
+  expiresAt: number;
+}
+
+function verifyToken(token: string): TokenPayload | null {
+  const secret = process.env.OTP_SECRET ?? 'dev-secret-change-me';
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [data, sig] = parts;
+
+  const expected = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length) return null;
+  if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
+
+  try {
+    return JSON.parse(Buffer.from(data, 'base64url').toString()) as TokenPayload;
+  } catch {
+    return null;
+  }
+}
 
 async function subscribeToKit(email: string): Promise<void> {
   const apiKey = process.env.KIT_API_KEY;
@@ -30,47 +55,36 @@ async function subscribeToKit(email: string): Promise<void> {
 }
 
 export async function POST(req: Request) {
-  let body: { email?: string; code?: string };
+  let body: { token?: string; code?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const email = body.email?.trim().toLowerCase() ?? '';
-  const code = body.code?.trim() ?? '';
+  const { token, code } = body;
 
-  if (!email || !code) {
-    return NextResponse.json({ error: 'Email and code are required.' }, { status: 400 });
+  if (!token || !code) {
+    return NextResponse.json({ error: 'Token and code are required.' }, { status: 400 });
   }
 
-  const entry = otpStore.get(email);
-  if (!entry) {
-    return NextResponse.json({ error: 'No verification code found. Please request a new one.' }, { status: 400 });
+  const payload = verifyToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid or tampered token. Please request a new code.' }, { status: 400 });
   }
 
-  if (Date.now() > entry.expiresAt) {
-    otpStore.delete(email);
+  if (Date.now() > payload.expiresAt) {
     return NextResponse.json({ error: 'Code expired. Please request a new one.' }, { status: 400 });
   }
 
-  if (entry.attempts >= 3) {
-    otpStore.delete(email);
-    return NextResponse.json({ error: 'Too many attempts. Please request a new code.' }, { status: 429 });
+  if (code.trim() !== payload.code) {
+    return NextResponse.json({ error: 'Incorrect code. Please try again.' }, { status: 400 });
   }
-
-  if (code !== entry.code) {
-    entry.attempts += 1;
-    return NextResponse.json({ error: 'Invalid code. Please try again.' }, { status: 400 });
-  }
-
-  otpStore.delete(email);
 
   try {
-    await subscribeToKit(email);
+    await subscribeToKit(payload.email);
   } catch (e) {
     console.error('Kit subscription failed:', e);
-    // Non-fatal — user still gets their report
   }
 
   return NextResponse.json({ success: true });

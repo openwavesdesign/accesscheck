@@ -21,6 +21,7 @@ function maskEmail(email: string): string {
 export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptureProps) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [token, setToken] = useState('');
   const [step, setStep] = useState<Step>('email');
   const [state, setState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -48,6 +49,7 @@ export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptur
       }
 
       setState('idle');
+      setToken(data.token ?? '');
       setStep('verify');
     } catch {
       setErrorMsg('Network error. Please check your connection and try again.');
@@ -66,7 +68,7 @@ export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptur
       const res = await fetch('/api/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
+        body: JSON.stringify({ token, code: code.trim() }),
       });
 
       const data = await res.json();
@@ -87,6 +89,7 @@ export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptur
 
   function handleResend() {
     setCode('');
+    setToken('');
     setState('idle');
     setErrorMsg('');
     setStep('email');

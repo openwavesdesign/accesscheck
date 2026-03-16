@@ -59,7 +59,7 @@ export default function AuditForm() {
         </p>
       )}
       <p className="mt-3 text-slate-400 text-xs font-sans text-center">
-        No account required. Results in under 30 seconds.
+        Free scan. Results in 30 seconds — full report sent to your inbox.
       </p>
     </form>
   );
