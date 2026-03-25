@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const code = crypto.randomInt(100000, 999999).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000;
 
-  const token = signToken({ email: normalizedEmail, code, expiresAt });
+  const token = signToken({ email: normalizedEmail, code, expiresAt, url: url ?? '', grade: grade ?? '' });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
