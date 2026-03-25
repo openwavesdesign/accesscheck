@@ -197,7 +197,8 @@ function ResultsContent() {
             <EmailCapture
               auditUrl={result.url}
               grade={result.grade}
-              checks={result.checks.map((c) => ({ id: c.id, status: c.status }))}
+              checks={result.checks}
+              score={result.score}
               onSuccess={() => setUnlocked(true)}
             />
           </div>
