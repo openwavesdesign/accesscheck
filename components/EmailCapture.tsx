@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import type { CheckResult } from '@/lib/audit';
 
 interface EmailCaptureProps {
   auditUrl: string;
   grade: string;
+  checks: CheckResult[];
+  score: number;
   onSuccess: () => void;
 }
 
@@ -18,7 +21,7 @@ function maskEmail(email: string): string {
   return `${visible}${'*'.repeat(Math.max(local.length - 2, 3))}@${domain}`;
 }
 
-export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptureProps) {
+export default function EmailCapture({ auditUrl, grade, checks, score, onSuccess }: EmailCaptureProps) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [token, setToken] = useState('');
@@ -37,7 +40,7 @@ export default function EmailCapture({ auditUrl, grade, onSuccess }: EmailCaptur
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), url: auditUrl, grade }),
+        body: JSON.stringify({ email: email.trim(), url: auditUrl, grade, checks, score }),
       });
 
       const data = await res.json();
