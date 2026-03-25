@@ -16,14 +16,14 @@ function signToken(payload: object): string {
 }
 
 export async function POST(req: Request) {
-  let body: { email?: string; url?: string; grade?: string };
+  let body: { email?: string; url?: string; grade?: string; checks?: Array<{ id: string; status: string }> };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const { email, url, grade } = body;
+  const { email, url, grade, checks } = body;
   const normalizedEmail = email?.trim().toLowerCase() ?? '';
 
   if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const code = crypto.randomInt(100000, 999999).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000;
 
-  const token = signToken({ email: normalizedEmail, code, expiresAt });
+  const token = signToken({ email: normalizedEmail, code, expiresAt, url, grade, checks });
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
