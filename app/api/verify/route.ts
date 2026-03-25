@@ -195,6 +195,118 @@ async function subscribeToKit(email: string): Promise<void> {
   }
 }
 
+// ─── HubSpot CRM Integration ─────────────────────────────────────────────────
+
+const CHECK_ID_TO_PROPERTY: Record<string, string> = {
+  'alt-text': 'accesscheck_alt_text',
+  'color-contrast': 'accesscheck_color_contrast',
+  'form-labels': 'accesscheck_form_labels',
+  'heading-hierarchy': 'accesscheck_heading_hierarchy',
+  'lang-attribute': 'accesscheck_lang_attribute',
+  'link-text': 'accesscheck_link_text',
+};
+
+async function ensureHubSpotProperties(token: string): Promise<void> {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+
+  // Ensure property group exists (409 = already exists, ignore)
+  try {
+    await fetch('https://api.hubapi.com/crm/v3/properties/contacts/groups', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: 'accesscheck',
+        label: 'AccessCheck Audit',
+        displayOrder: 1,
+      }),
+    });
+  } catch { /* ignore */ }
+
+  const statusOptions = [
+    { label: 'Pass', value: 'pass', hidden: false, displayOrder: 1 },
+    { label: 'Warning', value: 'warning', hidden: false, displayOrder: 2 },
+    { label: 'Fail', value: 'fail', hidden: false, displayOrder: 3 },
+  ];
+
+  const gradeOptions = ['A', 'B', 'C', 'D', 'F'].map((g, i) => ({
+    label: g, value: g, hidden: false, displayOrder: i + 1,
+  }));
+
+  const propertyDefs = [
+    { name: 'accesscheck_url', label: 'Audited URL', type: 'string', fieldType: 'text', groupName: 'accesscheck' },
+    { name: 'accesscheck_overall_grade', label: 'Overall Grade', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: gradeOptions },
+    { name: 'accesscheck_alt_text', label: 'Alt Text', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_color_contrast', label: 'Color Contrast', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_form_labels', label: 'Form Labels', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_heading_hierarchy', label: 'Heading Hierarchy', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_lang_attribute', label: 'Language Attribute', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_link_text', label: 'Link Text Quality', type: 'enumeration', fieldType: 'select', groupName: 'accesscheck', options: statusOptions },
+    { name: 'accesscheck_audit_date', label: 'Audit Date', type: 'string', fieldType: 'text', groupName: 'accesscheck' },
+  ];
+
+  await Promise.all(
+    propertyDefs.map(async (prop) => {
+      try {
+        await fetch('https://api.hubapi.com/crm/v3/properties/contacts', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(prop),
+        });
+        // 409 = property already exists — ignore
+      } catch { /* ignore */ }
+    })
+  );
+}
+
+async function addHubSpotContact(
+  email: string,
+  url?: string,
+  grade?: string,
+  checks?: CheckResult[]
+): Promise<void> {
+  const accessToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  if (!accessToken) return;
+
+  await ensureHubSpotProperties(accessToken);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+  };
+
+  const properties: Record<string, string> = {
+    email,
+    accesscheck_audit_date: new Date().toISOString(),
+  };
+  if (url) properties.accesscheck_url = url;
+  if (grade) properties.accesscheck_overall_grade = grade;
+  if (checks) {
+    for (const check of checks) {
+      const propName = CHECK_ID_TO_PROPERTY[check.id];
+      if (propName) properties[propName] = check.status;
+    }
+  }
+
+  // Try PATCH (upsert by email) first; fall back to POST if contact doesn't exist
+  const patchRes = await fetch(
+    `https://api.hubapi.com/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email`,
+    { method: 'PATCH', headers, body: JSON.stringify({ properties }) }
+  );
+
+  if (patchRes.status === 404) {
+    await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ properties }),
+    });
+  }
+}
+
+// ─── POST handler ─────────────────────────────────────────────────────────────
+
 export async function POST(req: Request) {
   let body: { token?: string; code?: string };
   try {
@@ -241,6 +353,12 @@ export async function POST(req: Request) {
     await sendUserReport(payload.email, payload.url ?? '', payload.grade ?? '', score, checks);
   } catch (e) {
     console.error('User report email failed:', e);
+  }
+
+  try {
+    await addHubSpotContact(payload.email, payload.url, payload.grade, payload.checks);
+  } catch (e) {
+    console.error('HubSpot contact creation failed:', e);
   }
 
   return NextResponse.json({ success: true });
